@@ -6,7 +6,7 @@ import { useWallet } from '../../hooks/useWallet';
 import { merchantLogin, fetchMerchantStats } from '../../lib/api';
 
 export default function MerchantDashboard() {
-  const { address, connect, isConnected } = useWallet();
+  const { address, connect, isConnected, isConnecting, isAvailable } = useWallet();
   const [token, setToken] = useState<string | null>(null);
   const [loggingIn, setLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -37,8 +37,8 @@ export default function MerchantDashboard() {
     try {
       const saved = localStorage.getItem('orbitstream_jwt');
       if (saved) setToken(saved);
-    } catch (e) {
-      // ignore
+    } catch (err) {
+      console.error('Unable to read JWT from localStorage:', err);
     }
   }, []);
 
@@ -54,8 +54,8 @@ export default function MerchantDashboard() {
           payments: s.totalPayments ?? 0,
           revenue: s.revenue ?? '$0.00',
         });
-      } catch (e) {
-        // don't block UI on stats failure
+      } catch (err) {
+        console.error('Unable to fetch merchant stats:', err);
       }
     })();
     return () => {
@@ -96,11 +96,26 @@ export default function MerchantDashboard() {
                   setConnectError(err instanceof Error ? err.message : 'Failed to connect wallet');
                 }
               }}
-              className="px-6 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors"
+              disabled={isConnecting}
+              className="px-6 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-lg transition-colors"
             >
-              Connect Freighter Wallet
+              {isConnecting ? 'Connecting…' : 'Connect Freighter Wallet'}
             </button>
             {connectError ? <p className="text-sm text-red-400 mt-2">{connectError}</p> : null}
+            {isAvailable === false ? (
+              <p className="text-sm text-zinc-400 mt-2">
+                Freighter not detected — install the extension from{' '}
+                <a
+                  href="https://www.freighter.app/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-indigo-400 underline"
+                >
+                  freighter.app
+                </a>
+                .
+              </p>
+            ) : null}
           </div>
         ) : !token ? (
           <div className="text-center py-20">
