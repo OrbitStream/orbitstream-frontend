@@ -2,10 +2,47 @@
 
 import { useState } from 'react';
 import { useWallet } from '../../../hooks/useWallet';
+import { generateApiKey, saveWebhookUrl } from '../../../lib/api';
 
 export default function MerchantSettings() {
-  const { address, connect, isConnected } = useWallet();
+  const { connect, isConnected } = useWallet();
   const [webhookUrl, setWebhookUrl] = useState('');
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [connectError, setConnectError] = useState<string | null>(null);
+  const [token] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('orbitstream_jwt');
+    } catch {
+      return null;
+    }
+  });
+
+  const handleGenerateKey = async () => {
+    setError(null);
+    setMessage(null);
+    if (!token) return setError('Not authenticated');
+    try {
+      const res = await generateApiKey(token);
+      setApiKey(res.key ?? res.apiKey ?? null);
+      setMessage('API key generated');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to generate key');
+    }
+  };
+
+  const handleSaveWebhook = async () => {
+    setError(null);
+    setMessage(null);
+    if (!token) return setError('Not authenticated');
+    try {
+      await saveWebhookUrl(token, webhookUrl);
+      setMessage('Webhook saved');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save webhook');
+    }
+  };
 
   if (!isConnected) {
     return (
@@ -13,11 +50,19 @@ export default function MerchantSettings() {
         <div className="text-center">
           <p className="text-zinc-400 mb-4">Connect your wallet to access settings.</p>
           <button
-            onClick={connect}
+            onClick={async () => {
+              setConnectError(null);
+              try {
+                await connect();
+              } catch (err) {
+                setConnectError(err instanceof Error ? err.message : 'Failed to connect wallet');
+              }
+            }}
             className="px-6 py-3 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg"
           >
             Connect Freighter
           </button>
+          {connectError ? <p className="text-sm text-red-400 mt-2">{connectError}</p> : null}
         </div>
       </div>
     );
@@ -46,9 +91,14 @@ export default function MerchantSettings() {
           <p className="text-sm text-zinc-500 mb-4">
             Use API keys to create checkout sessions programmatically.
           </p>
-          <button className="px-4 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors">
-            Generate New Key
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={handleGenerateKey} className="px-4 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors">
+              Generate New Key
+            </button>
+            {apiKey ? <code className="text-xs bg-zinc-800 px-2 py-1 rounded">{apiKey}</code> : null}
+          </div>
+          {message ? <p className="text-sm text-green-400 mt-2">{message}</p> : null}
+          {error ? <p className="text-sm text-red-400 mt-2">{error}</p> : null}
         </div>
 
         {/* Webhook */}
@@ -65,7 +115,7 @@ export default function MerchantSettings() {
               placeholder="https://your-server.com/webhooks"
               className="flex-1 px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
             />
-            <button className="px-4 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors">
+            <button onClick={handleSaveWebhook} className="px-4 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors">
               Save
             </button>
           </div>
