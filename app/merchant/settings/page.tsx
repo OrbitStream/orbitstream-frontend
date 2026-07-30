@@ -1,26 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useWallet } from '../../../hooks/useWallet';
 import { generateApiKey, saveWebhookUrl } from '../../../lib/api';
 
 export default function MerchantSettings() {
-  const { address, connect, isConnected } = useWallet();
+  const { connect, isConnected } = useWallet();
   const [webhookUrl, setWebhookUrl] = useState('');
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connectError, setConnectError] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
+  const [token, setToken] = useState<string | null>(() => {
     try {
-      const saved = localStorage.getItem('orbitstream_jwt');
-      if (saved) setToken(saved);
-    } catch (e) {
-      // ignore
+      return localStorage.getItem('orbitstream_jwt');
+    } catch {
+      return null;
     }
-  }, []);
+  });
 
   const handleGenerateKey = async () => {
     setError(null);
