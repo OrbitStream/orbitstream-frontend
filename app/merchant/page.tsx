@@ -17,15 +17,15 @@ export default function MerchantDashboard() {
     if (!address) return;
     setLoggingIn(true);
     setLoginError(null);
-    try {
-      const result = await merchantLogin(address);
-      setToken(result.access_token);
       try {
-        localStorage.setItem('orbitstream_jwt', result.access_token);
-      } catch (e) {
-        // ignore localStorage errors
-      }
-    } catch (err) {
+        const result = await merchantLogin(address);
+        setToken(result.access_token);
+        try {
+          localStorage.setItem('orbitstream_jwt', result.access_token);
+        } catch {
+          // ignore localStorage errors
+        }
+      } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed';
       setLoginError(message);
     } finally {

@@ -11,7 +11,7 @@ export default function MerchantSettings() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connectError, setConnectError] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(() => {
+  const [token] = useState<string | null>(() => {
     try {
       return localStorage.getItem('orbitstream_jwt');
     } catch {
